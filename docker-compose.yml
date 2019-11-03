@@ -1,0 +1,39 @@
+version: "3.5"
+
+services:
+
+  php:
+    build:
+      context: ./
+      dockerfile: docker/php/Dockerfile
+    environment:
+      AMQP_HOST: rabbitmq
+    restart: always
+    working_dir: /var/www
+    volumes:
+      - ./:/var/www
+      #- ./docker/php.ini:/usr/local/etc/php/conf.d/php.ini
+    depends_on:
+      - rabbitmq
+    command: ["./docker/wait-for-rabbitmq.sh", "rabbitmq", "php", "supervisord.php"]
+
+  rabbitmq:
+    build:
+      context: ./
+      dockerfile: docker/rabbitmq/Dockerfile
+    restart: always
+    networks:
+      - default
+    healthcheck:
+      timeout: 5s
+      interval: 5s
+      retries: 5
+      test:
+        - "CMD"
+        - "rabbitmqctl"
+        - "status"
+
+networks:
+  default:
+    driver: bridge
+    name: whatsh_network
